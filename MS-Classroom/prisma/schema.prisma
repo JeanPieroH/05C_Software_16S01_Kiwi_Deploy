@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Classroom {
+  id          Int    @id @default(autoincrement())
+  name        String
+  description String
+
+  teachers    Classroom_Teacher[]
+  students    Classroom_Student[]
+  competences Classroom_Competence_Student[]
+}
+
+model Classroom_Teacher {
+  id_classroom Int
+  id_teacher   Int
+
+  classroom Classroom @relation(fields: [id_classroom], references: [id])
+
+  @@id([id_classroom, id_teacher])
+}
+
+model Classroom_Student {
+  id_student     Int
+  id_classroom   Int
+  coin_earned    Int
+  coin_available Int
+
+  classroom Classroom @relation(fields: [id_classroom], references: [id])
+
+  @@id([id_student, id_classroom])
+}
+
+model Competence {
+  id          Int    @id @default(autoincrement())
+  id_teacher  Int
+  name        String
+  description String
+
+  questions  Competence_Question[]
+  classrooms Classroom_Competence_Student[]
+}
+
+model Competence_Question {
+  id_competence Int
+  id_question   Int
+
+  competence Competence @relation(fields: [id_competence], references: [id])
+
+  @@id([id_competence, id_question])
+}
+
+model Classroom_Competence_Student {
+  id_student      Int
+  id_competence   Int
+  id_classroom    Int
+  obtained_points Int
+  total_points    Int
+
+  competence Competence @relation(fields: [id_competence], references: [id])
+  classroom  Classroom  @relation(fields: [id_classroom], references: [id])
+
+  @@id([id_student, id_competence, id_classroom])
+}

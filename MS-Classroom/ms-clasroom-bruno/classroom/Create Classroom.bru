@@ -1,0 +1,21 @@
+meta {
+  name: Create Classroom
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:3000/classrooms
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Clase de Biología",
+    "description": "Estudio de organismos vivos",
+    "teachers": [1],
+    "students": [101, 102]
+  }
+  
+}
