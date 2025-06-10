@@ -4,7 +4,9 @@ import httpx
 import os
 
 router = APIRouter()
-users_url = "http://localhost:8080"
+users_url = os.getenv("USERS_API_URL", "http://localhost:8080")
+classrooms_url = os.getenv("CLASSROOMS_API_URL", "http://localhost:3000")
+quices_url = os.getenv("QUICES_API_URL", "http://localhost:8001/api/v1")
 
 print("USERS_API_URL:", users_url)
 

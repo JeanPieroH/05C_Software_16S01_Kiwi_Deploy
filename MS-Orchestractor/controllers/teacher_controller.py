@@ -7,9 +7,10 @@ import json
 
 router = APIRouter(dependencies=[Depends(verify_token_role_teacher)])
 
-classrooms_url = "http://localhost:3000"
-quices_url = "http://localhost:8001/api/v1"
-users_url = "http://localhost:8080"
+users_url = os.getenv("USERS_API_URL", "http://localhost:8080")
+classrooms_url = os.getenv("CLASSROOMS_API_URL", "http://localhost:3000")
+quices_url = os.getenv("QUICES_API_URL", "http://localhost:8001/api/v1")
+
 
 
 @router.get("/me", response_model=Teacher)

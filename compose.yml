@@ -73,7 +73,7 @@ services:
     environment:
       APP_NAME: "kiwi-quiz-service"
       DEBUG: "True"
-      DATABASE_URL: "postgresql+asyncpg://postgres:xxx@db:5432/software_16s01_kiwi?schema=public"
+      DATABASE_URL: "postgresql+asyncpg://postgres:xxx@db:5432/software_16s01_kiwi?options=-csearch_path%3Dpublic"
       GOOGLE_API_KEY: "AIzaSyCJIsHvnKsCROFbaKH52Iw-vvL7Yhfrdck"
       GEMINI_MODEL: "gemini-2.0-flash"
     networks:

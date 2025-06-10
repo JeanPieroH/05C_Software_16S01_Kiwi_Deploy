@@ -8,7 +8,11 @@ timeout = httpx.Timeout(30.0)  # 30 segundos
 
 
 router = APIRouter(dependencies=[Depends(verify_token)])
-quices_url = "http://localhost:8001/api/v1"
+
+users_url = os.getenv("USERS_API_URL", "http://localhost:8080")
+classrooms_url = os.getenv("CLASSROOMS_API_URL", "http://localhost:3000")
+quices_url = os.getenv("QUICES_API_URL", "http://localhost:8001/api/v1")
+
 
 
 @router.get("/{quiz_id}", response_model=QuizDetail)
