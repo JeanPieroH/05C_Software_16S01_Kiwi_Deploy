@@ -1,0 +1,18 @@
+meta {
+  name: 02-classroom-add-student
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:3000/classrooms/1/add-students
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "students_id": [3]
+  }
+  
+}

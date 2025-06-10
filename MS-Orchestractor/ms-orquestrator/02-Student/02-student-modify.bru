@@ -1,0 +1,15 @@
+meta {
+  name: 02-student-modify
+  type: http
+  seq: 2
+}
+
+patch {
+  url: http://localhost:8000/student/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtaWNoYWVsQGdtYWlsLmNvbSIsInJvbGUiOiJURUFDSEVSIiwiZXhwIjoxNzQ5MTUzMzUxLCJpYXQiOjE3NDkwNjY5NTF9.bhU6oOw33bpInIzY1v32ic1smsL7RtmchwJB-OvivCg
+}

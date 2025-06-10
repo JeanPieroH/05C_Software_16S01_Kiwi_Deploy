@@ -1,0 +1,69 @@
+meta {
+  name: 10-teacher-generate-quiz-from-text
+  type: http
+  seq: 10
+}
+
+post {
+  url: http://localhost:8000/teacher/quiz/generate-from-text
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtaWNoYWVsQGdtYWlsLmNvbSIsInJvbGUiOiJURUFDSEVSIiwiZXhwIjoxNzQ5NjE2NzM3LCJpYXQiOjE3NDk1MzAzMzd9.TOVaurr9CMJgcxZW4Y0bN9cVTZy8p13EGemAZjrHP_A
+}
+
+body:json {
+  {
+      "classroom_id": 1,
+      "num_question": 5,
+      "point_max": 20,
+      "text": "elabora un quiz sobre la segunda guerra mundial",
+      "competences": [
+          {
+              "id": 1,
+              "name": "Escritura en español",
+              "description": "Esta competencia aborda sobre escribir español"
+          },
+          {
+              "id": 2,
+              "name": "Uso de articulos",
+              "description": "Esta competencia aborda sobre usa articulos en gramatica"
+          }
+      ],
+      "type_question":{
+          "textuales": false,
+          "inferenciales": true,
+          "críticas": false
+      }
+  }
+}
+
+body:multipart-form {
+  input_data_json: '''
+    {
+        "classroom_id": 1,
+        "num_question": 5,
+        "point_max": 20,
+        "text": "elabora un quiz sobre la segunda guerra mundial",
+        "competences": [
+            {
+                "id": 1,
+                "name": "Escritura en español",
+                "description": "Esta competencia aborda sobre escribir español"
+            },
+            {
+                "id": 2,
+                "name": "Uso de articulos",
+                "description": "Esta competencia aborda sobre usa articulos en gramatica"
+            }
+        ],
+        "type_question":{
+            "textuales": false,
+            "inferenciales": true,
+            "críticas": false
+        }
+    }
+  '''
+}

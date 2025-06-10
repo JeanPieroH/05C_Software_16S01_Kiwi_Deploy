@@ -1,0 +1,36 @@
+meta {
+  name: 13-classroom-add-quiz
+  type: http
+  seq: 10
+}
+
+patch {
+  url: http://localhost:3000/classrooms/1/quizzes-competences
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "quiz_id" : 1,
+      "total_points": 20,
+      "questions":[
+              {
+                  "question_id": 1,
+                  "points":10,
+                  "competences_id":[
+                      1,2
+                  ]
+              },
+              {
+                  "question_id": 2,
+                  "points":5,
+                  "competences_id":[
+                      1
+                  ]
+              }
+          ]
+  }
+  
+  
+}

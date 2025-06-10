@@ -1,0 +1,37 @@
+meta {
+  name: 04-quiz-submitted-answer
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:8001/api/v1/quiz/submit_answers
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "quiz_id": 1,
+      "student_id": 2,
+      "is_present": true,
+      "questions": [
+          {
+              "question_id": 1,
+              "answer_submitted": {
+                  "type": "submitted_text",
+                  "answer_written": "mi respuesta"
+              }
+          },
+          {
+              "question_id": 2,
+              "answer_submitted": {
+                  "type": "submitted_multiple_option",
+                  "option_select": "1810"
+              }
+          }
+      ]
+  }
+  
+  
+}

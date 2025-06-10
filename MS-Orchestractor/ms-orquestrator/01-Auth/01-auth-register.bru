@@ -1,0 +1,21 @@
+meta {
+  name: 01-auth-register
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8000/auth/register
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "miki",
+      "last_name": "hinojosa",
+      "email": "alumno2@gmail.com",
+      "password": "123",
+      "role": "STUDENT"
+  }
+}

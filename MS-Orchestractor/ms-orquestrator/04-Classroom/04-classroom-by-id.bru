@@ -1,0 +1,15 @@
+meta {
+  name: 04-classroom-by-id
+  type: http
+  seq: 4
+}
+
+get {
+  url: http://localhost:8000/classroom/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtaWNoYWVsQGdtYWlsLmNvbSIsInJvbGUiOiJURUFDSEVSIiwiZXhwIjoxNzQ5NjE2NzM3LCJpYXQiOjE3NDk1MzAzMzd9.TOVaurr9CMJgcxZW4Y0bN9cVTZy8p13EGemAZjrHP_A
+}

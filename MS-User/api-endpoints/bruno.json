@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "name": "api-endpoints",
+  "name": "01-bruno-ms-users",
   "type": "collection",
   "ignore": [
     "node_modules",

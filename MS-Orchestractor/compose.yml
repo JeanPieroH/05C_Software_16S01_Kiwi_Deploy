@@ -1,4 +1,3 @@
-
 networks:
   my_network:
     driver: bridge
@@ -11,19 +10,18 @@ services:
     ports:
       - 8001:8080
     environment:
-      POSTGRES_HOST: "host.docker.internal"  
-      POSTGRES_PORT: "5432"           
-      POSTGRES_USER: "postgres"          
-      POSTGRES_PASSWORD: "xxx"     
-      POSTGRES_DATABASE: "software_16s01_kiwi"  
+      POSTGRES_HOST: "host.docker.internal"
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "xxx"
+      POSTGRES_DATABASE: "software_16s01_kiwi"
       JWT_SECRET: "brwb1w556165b16v156aafasf"
       MAIL_USERNAME: "proyectodbp1@gmail.com"
       MAIL_PASSWORD: "nsfr upkz ajfa pta"
-    networks: 
+    networks:
       - my_network
     expose:
       - "8080"
-
 
   orchestrator:
     build:
@@ -33,16 +31,16 @@ services:
       - "8000:8000"
     environment:
       - USERS_API_URL=http://users:8080
-#      - CLASSROOMs_API_URL=http://classrooms:8001
-#      - QUICES_API_URL=http://quices:8002
-#      - CHARACTERS_API_URL=http://characters:8003
+      - CLASSROOMs_API_URL=http://classrooms:3000
+      - QUICES_API_URL=http://quices:8002
+    #      - CHARACTERS_API_URL=http://characters:8003
     restart: always
     depends_on:
       - users
-#      - classrooms
-#      - quices
-#      - characters
-    networks: 
+    #      - classrooms
+    #      - quices
+    #      - characters
+    networks:
       - my_network
     expose:
       - "8000"

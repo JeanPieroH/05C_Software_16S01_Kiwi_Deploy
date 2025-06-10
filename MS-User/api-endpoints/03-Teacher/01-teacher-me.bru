@@ -1,0 +1,15 @@
+meta {
+  name: 01-teacher-me
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:8080/teacher/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1QGdtYWlsLmNvbSIsInJvbGUiOiJTVFVERU5UIiwiZXhwIjoxNzQ5NTk4MjUwLCJpYXQiOjE3NDk1MTE4NTB9.8BL7HU3y2-uLFahm6dlO_gI2aPYmweeCuMTglg10rHU
+}

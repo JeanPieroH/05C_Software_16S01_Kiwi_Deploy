@@ -1,0 +1,21 @@
+meta {
+  name: 02-teacher-by-id
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://localhost:8080/teacher/by-ids
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1QGdtYWlsLmNvbSIsInJvbGUiOiJTVFVERU5UIiwiZXhwIjoxNzQ5MTY2OTY3LCJpYXQiOjE3NDkwODA1Njd9.PvsO8kQwOVpxJA6Jn9x5uwFrxxYvLnkvZnnzXaZJI8M
+}
+
+body:json {
+  {
+    "teachers_id": [1,2]
+  }
+}

@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "name": "ms-clasroom-bruno",
+  "name": "02-bruno-ms-clasroom",
   "type": "collection",
   "ignore": [
     "node_modules",

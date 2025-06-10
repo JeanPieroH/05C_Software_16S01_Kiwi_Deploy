@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "03-bruno-ms-quiz",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

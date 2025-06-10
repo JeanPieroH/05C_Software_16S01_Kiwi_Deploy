@@ -1,0 +1,24 @@
+meta {
+  name: Create New Quiz
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:8000/quiz/1/classroom/1/quiz/generate-from-pdf
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtaWNoYWVsQGdtYWlsLmNvbSIsInJvbGUiOiJURUFDSEVSIiwiZXhwIjoxNzQ4NjYxMjkzLCJpYXQiOjE3NDg1NzQ4OTN9.540TdFgei5mPQI8N_vjI3tFLoXsJF-s4A38qZcXE0L0
+}
+
+body:multipart-form {
+  title: Prueba
+  id_clasroom: 1
+  id_teacher: 1
+  num_questions: 5
+  description: Pruebita a ver si funciona
+  file: @file(/home/m41k1/Documents/UTEC/2025-1/Software/kiwi/Historia de los hermanos Ayar.pdf)
+}

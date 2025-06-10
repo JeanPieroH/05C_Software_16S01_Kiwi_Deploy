@@ -1,0 +1,15 @@
+meta {
+  name: 04-student-add-coins
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:8080/student/1/add-coins/10
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1QGdtYWlsLmNvbSIsInJvbGUiOiJTVFVERU5UIiwiZXhwIjoxNzQ5NjU0NDM1LCJpYXQiOjE3NDk1NjgwMzV9.dg7o7C08XDc2rrf6_QEcPocEu1Dxg43HX29yLUUc8YA
+}

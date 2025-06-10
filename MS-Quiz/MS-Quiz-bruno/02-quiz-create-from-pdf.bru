@@ -1,0 +1,64 @@
+meta {
+  name: 02-quiz-create-from-pdf
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8001/api/v1/quiz/generate-from-pdf
+  body: multipartForm
+  auth: inherit
+}
+
+body:json {
+  {
+      "classroom_id": 1,
+      "num_question": 5,
+      "competences": [
+          {
+              "id": 1,
+              "name": "Escritura en español",
+              "description": "Esta competencia aborda sobre escribir español"
+          },
+          {
+              "id": 2,
+              "name": "Uso de articulos",
+              "description": "Esta competencia aborda sobre usa articulos en gramatica"
+          }
+      ],
+      "type_question":{
+          "textuales": false,
+          "inferenciales": true,
+          "críticas": false
+      }
+  }
+}
+
+body:multipart-form {
+  input_data_json: '''
+    
+    {
+        "classroom_id": 1,
+        "num_question": 5,
+        "point_max": 20,
+        "competences": [
+            {
+                "id": 1,
+                "name": "Escritura en español",
+                "description": "Esta competencia aborda sobre escribir español"
+            },
+            {
+                "id": 2,
+                "name": "Uso de articulos",
+                "description": "Esta competencia aborda sobre usa articulos en gramatica"
+            }
+        ],
+        "type_question":{
+            "textuales": false,
+            "inferenciales": true,
+            "críticas": false
+        }
+    }
+  '''
+  pdf_file: @file(E:\PC1_20242.pdf)
+}

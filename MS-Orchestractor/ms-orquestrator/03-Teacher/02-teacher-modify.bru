@@ -1,0 +1,15 @@
+meta {
+  name: 02-teacher-modify
+  type: http
+  seq: 2
+}
+
+patch {
+  url: http://localhost:8000/teacher/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtaWNoYWVsQGdtYWlsLmNvbSIsInJvbGUiOiJURUFDSEVSIiwiZXhwIjoxNzQ5MTY0MzUwLCJpYXQiOjE3NDkwNzc5NTB9.PmjIG5j2jr3O9VNbpQSAlsRfkFtLpWInhiFAwTRLKy4
+}

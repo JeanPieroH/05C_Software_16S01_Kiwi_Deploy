@@ -11,15 +11,19 @@ model Classroom {
   id          Int    @id @default(autoincrement())
   name        String
   description String
+  total_points   Int
+  quiz     Int[] 
 
   teachers    Classroom_Teacher[]
   students    Classroom_Student[]
-  competences Classroom_Competence_Student[]
+  competences_student Classroom_Competence_Student[]
+  competences Classroom_Competence[]
 }
 
 model Classroom_Teacher {
   id_classroom Int
   id_teacher   Int
+  role_classroom         String
 
   classroom Classroom @relation(fields: [id_classroom], references: [id])
 
@@ -29,8 +33,8 @@ model Classroom_Teacher {
 model Classroom_Student {
   id_student     Int
   id_classroom   Int
-  coin_earned    Int
-  coin_available Int
+  role_classroom String
+  obtained_points Int
 
   classroom Classroom @relation(fields: [id_classroom], references: [id])
 
@@ -39,13 +43,27 @@ model Classroom_Student {
 
 model Competence {
   id          Int    @id @default(autoincrement())
-  id_teacher  Int
   name        String
   description String
+  id_teacher   Int
 
   questions  Competence_Question[]
-  classrooms Classroom_Competence_Student[]
+  classroom_student Classroom_Competence_Student[]
+  classroom Classroom_Competence[]
+
 }
+
+model Classroom_Competence {
+  id_classroom   Int
+  id_competence  Int
+  total_points   Int
+
+  classroom   Classroom  @relation(fields: [id_classroom], references: [id])
+  competence  Competence @relation(fields: [id_competence], references: [id])
+
+  @@id([id_classroom, id_competence])
+}
+
 
 model Competence_Question {
   id_competence Int
@@ -61,7 +79,6 @@ model Classroom_Competence_Student {
   id_competence   Int
   id_classroom    Int
   obtained_points Int
-  total_points    Int
 
   competence Competence @relation(fields: [id_competence], references: [id])
   classroom  Classroom  @relation(fields: [id_classroom], references: [id])

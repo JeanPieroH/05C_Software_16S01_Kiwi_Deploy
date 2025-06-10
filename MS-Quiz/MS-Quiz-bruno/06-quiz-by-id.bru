@@ -1,0 +1,11 @@
+meta {
+  name: 06-quiz-by-id
+  type: http
+  seq: 7
+}
+
+get {
+  url: http://localhost:8001/api/v1/quiz/1
+  body: json
+  auth: inherit
+}

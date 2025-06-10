@@ -1,0 +1,30 @@
+meta {
+  name: 14-classroom-add-result-quiz
+  type: http
+  seq: 11
+}
+
+patch {
+  url: http://localhost:3000/classrooms/1/student-quiz-points
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {   
+      "quiz_id" : 1,
+      "student_id": 2,
+      "obtained_points": 13,
+      "question_student":[
+          {
+              "question_id": 11,
+              "obtained_points": 10
+          },
+          {
+              "question_id": 12,
+              "obtained_points": 3
+          }
+      ]
+      
+  }
+}

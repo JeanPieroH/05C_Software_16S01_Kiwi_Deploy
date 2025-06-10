@@ -1,0 +1,17 @@
+meta {
+  name: 15-classroom-remove-quiz-id
+  type: http
+  seq: 12
+}
+
+delete {
+  url: http://localhost:3000/classrooms/1/quizzes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "quiz_id": [1,2]
+  }
+}

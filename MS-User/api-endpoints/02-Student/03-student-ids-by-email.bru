@@ -1,0 +1,21 @@
+meta {
+  name: 03-student-ids-by-email
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/student/ids-by-email
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1QGdtYWlsLmNvbSIsInJvbGUiOiJTVFVERU5UIiwiZXhwIjoxNzQ5MTY2OTY3LCJpYXQiOjE3NDkwODA1Njd9.PvsO8kQwOVpxJA6Jn9x5uwFrxxYvLnkvZnnzXaZJI8M
+}
+
+body:json {
+  {
+    "emails": ["4@gmail.com","5@gmail.com"]
+  }
+}

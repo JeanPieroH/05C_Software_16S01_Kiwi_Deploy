@@ -1,0 +1,22 @@
+meta {
+  name: 05-teacher-competence
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:8000/teacher/1/competences
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtaWNoYWVsQGdtYWlsLmNvbSIsInJvbGUiOiJURUFDSEVSIiwiZXhwIjoxNzQ5NjE2NzM3LCJpYXQiOjE3NDk1MzAzMzd9.TOVaurr9CMJgcxZW4Y0bN9cVTZy8p13EGemAZjrHP_A
+}
+
+body:json {
+  {
+    "name": "Resolución de problemas",
+    "description": "Aplicación lógica y estructurada"
+  }
+}

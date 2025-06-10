@@ -1,0 +1,56 @@
+meta {
+  name: 08-teacher-classroom-quiz-create
+  type: http
+  seq: 8
+}
+
+post {
+  url: http://localhost:8000/teacher/classroom/1/quiz/create
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtaWNoYWVsQGdtYWlsLmNvbSIsInJvbGUiOiJURUFDSEVSIiwiZXhwIjoxNzQ5NjE2NzM3LCJpYXQiOjE3NDk1MzAzMzd9.TOVaurr9CMJgcxZW4Y0bN9cVTZy8p13EGemAZjrHP_A
+}
+
+body:json {
+  {
+      "classroom_id": 1,
+      "title": "titulo 1",
+      "instruction": "Esta es la instruccion",
+      "start_time": "2025-06-09T15:30:00Z",
+      "end_time": "2025-06-09T16:30:00Z",
+      "questions": [
+          {
+              "statement": "enunciado de la pregunta 1",
+              "answer_correct": "esta es la respuesta correcta",
+              "points": 10,
+              "answer_base": {
+                  "type": "base_text"
+              },
+              "competences_id": [
+                  1,
+                  2
+              ]
+          },
+          {
+              "statement": "enunciado de la pregunta 2",
+              "answer_correct": "1810",
+              "points": 10,
+              "answer_base": {
+                  "type": "base_multiple_option",
+                  "options": [
+                      "1810",
+                      "1821",
+                      "1910",
+                      "1857"
+                  ]
+              },
+              "competences_id": [
+                  1
+              ]
+          }
+      ]
+  }
+}

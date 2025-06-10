@@ -1,0 +1,15 @@
+meta {
+  name: 02-classroom-all-teacher
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://localhost:8000/classroom/1/teacher
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtaWNoYWVsQGdtYWlsLmNvbSIsInJvbGUiOiJURUFDSEVSIiwiZXhwIjoxNzQ5MTY3NTM4LCJpYXQiOjE3NDkwODExMzh9.1BQCb_l8BLBkti0ZEhm43F32xRoggP_6Gdg1-MSyzq4
+}

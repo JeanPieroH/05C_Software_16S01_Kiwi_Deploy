@@ -1,0 +1,21 @@
+meta {
+  name: 02-student-by-id
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/student/by-ids
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1QGdtYWlsLmNvbSIsInJvbGUiOiJTVFVERU5UIiwiZXhwIjoxNzQ5MTY3MDI2LCJpYXQiOjE3NDkwODA2MjZ9.ATapu2MKr2sSjvKoprMcg1KJEhlQ8b8jI51cqzXREn8
+}
+
+body:json {
+  {
+    "students_id": [1,2]
+  }
+}

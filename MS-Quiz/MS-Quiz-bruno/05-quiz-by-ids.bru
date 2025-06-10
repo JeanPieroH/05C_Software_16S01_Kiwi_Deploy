@@ -1,0 +1,21 @@
+meta {
+  name: 05-quiz-by-ids
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://localhost:8001/api/v1/quiz/get-by-ids
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "quiz_ids": [
+        9
+      ]
+  }
+  
+  
+}

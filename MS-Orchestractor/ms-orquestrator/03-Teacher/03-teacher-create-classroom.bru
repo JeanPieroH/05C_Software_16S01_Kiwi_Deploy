@@ -1,0 +1,23 @@
+meta {
+  name: 03-teacher-create-classroom
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8000/teacher/1/classroom
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtaWNoYWVsQGdtYWlsLmNvbSIsInJvbGUiOiJURUFDSEVSIiwiZXhwIjoxNzQ5NjE2NDMwLCJpYXQiOjE3NDk1MzAwMzB9.FR0kuPS8tcDphYA81rkl7YJw69yf8uqcXMK61tRtj68
+}
+
+body:json {
+  {
+    "name": "Salon de prueba",
+    "description": "Clase de prueba"
+  }
+  
+}

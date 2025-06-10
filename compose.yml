@@ -1,0 +1,105 @@
+networks:
+  my_network:
+    driver: bridge
+
+volumes:
+  # Un único volumen para la persistencia de datos de la base de datos compartida
+  shared_db_data:
+
+services:
+  # Servicio de base de datos PostgreSQL compartida
+  db:
+    image: postgres:13-alpine
+    container_name: shared_postgres_db_kiwi
+    ports:
+      - "5432:5432" # Opcional: expone el puerto al host para acceso externo
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "xxx" # ¡IMPORTANTE: Usar una contraseña segura en producción!
+      POSTGRES_DB: "software_16s01_kiwi" # La base de datos que todos usarán
+    volumes:
+      - shared_db_data:/var/lib/postgresql/data
+    networks:
+      - my_network
+    restart: always
+
+  users:
+    build:
+      context: ./MS-User
+      dockerfile: Dockerfile # Agregado: especifica el Dockerfile a usar
+    image: microservice-users
+    ports:
+      - 8001:8080
+    environment:
+      POSTGRES_HOST: "db" # Se conecta al servicio 'db'
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "xxx"
+      POSTGRES_DATABASE: "software_16s01_kiwi"
+      JWT_SECRET: "brwb1w556165b16v156aafasf"
+      MAIL_USERNAME: "proyectodbp1@gmail.com"
+      MAIL_PASSWORD: "nsfr upkz ajfa pta"
+    networks:
+      - my_network
+    expose:
+      - "8080"
+    depends_on:
+      - db
+
+  classrooms:
+    build:
+      context: ./MS-Classroom
+      dockerfile: Dockerfile # Agregado: especifica el Dockerfile a usar
+    image: microservice-classroom
+    ports:
+      - 8002:3000
+    environment:
+      DATABASE_URL: "postgresql://postgres:xxx@db:5432/software_16s01_kiwi?schema=public"
+      PORT: "3000"
+    networks:
+      - my_network
+    expose:
+      - "3000"
+    depends_on:
+      - db
+
+  quices:
+    build:
+      context: ./MS-Quiz
+      dockerfile: Dockerfile # Agregado: especifica el Dockerfile a usar
+    image: microservice-quiz
+    ports:
+      - 8003:8001
+    environment:
+      APP_NAME: "kiwi-quiz-service"
+      DEBUG: "True"
+      DATABASE_URL: "postgresql+asyncpg://postgres:xxx@db:5432/software_16s01_kiwi?schema=public"
+      GOOGLE_API_KEY: "AIzaSyCJIsHvnKsCROFbaKH52Iw-vvL7Yhfrdck"
+      GEMINI_MODEL: "gemini-2.0-flash"
+    networks:
+      - my_network
+    expose:
+      - "8001"
+    depends_on:
+      - db
+
+  orchestrator:
+    build:
+      context: ./MS-Orchestractor
+      dockerfile: Dockerfile # Agregado: especifica el Dockerfile a usar
+    image: orchestrator
+    ports:
+      - "8000:8000"
+    environment:
+      USERS_API_URL: http://users:8080
+      CLASSROOMs_API_URL: http://classrooms:3000
+      QUICES_API_URL: http://quices:8001/api/v1
+    restart: always
+    depends_on:
+      - users
+      - classrooms
+      - quices
+    networks:
+      - my_network
+    expose:
+      - "8000"

@@ -1,0 +1,67 @@
+meta {
+  name: 03-quiz-create-from-text
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:8001/api/v1/quiz/generate-from-text
+  body: multipartForm
+  auth: inherit
+}
+
+body:json {
+  
+  {
+      "classroom_id": 1,
+      "num_question": 5,
+      "point_max": 20,
+      "text": "elabora un quiz sobre la segunda guerra mundial",
+      "competences": [
+          {
+              "id": 1,
+              "name": "Escritura en español",
+              "description": "Esta competencia aborda sobre escribir español"
+          },
+          {
+              "id": 2,
+              "name": "Uso de articulos",
+              "description": "Esta competencia aborda sobre usa articulos en gramatica"
+          }
+      ],
+      "type_question":{
+          "textuales": false,
+          "inferenciales": true,
+          "críticas": false
+      }
+  }
+}
+
+body:multipart-form {
+  input_data_json: '''
+    
+    {
+        "classroom_id": 1,
+        "num_question": 5,
+        "point_max": 20,
+        "text": "elabora un quiz sobre la segunda guerra mundial",
+        "competences": [
+            {
+                "id": 1,
+                "name": "Escritura en español",
+                "description": "Esta competencia aborda sobre escribir español"
+            },
+            {
+                "id": 2,
+                "name": "Uso de articulos",
+                "description": "Esta competencia aborda sobre usa articulos en gramatica"
+            }
+        ],
+        "type_question":{
+            "textuales": false,
+            "inferenciales": true,
+            "críticas": false
+        }
+    }
+  '''
+}

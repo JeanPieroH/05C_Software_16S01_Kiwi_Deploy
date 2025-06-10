@@ -1,0 +1,15 @@
+meta {
+  name: 06-classroom-ranking
+  type: http
+  seq: 6
+}
+
+get {
+  url: http://localhost:8000/classroom/1/ranking
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbHVtbm8yQGdtYWlsLmNvbSIsInJvbGUiOiJTVFVERU5UIiwiZXhwIjoxNzQ5NjU3ODk5LCJpYXQiOjE3NDk1NzE0OTl9.WGZdm5w0tX0S5XII1W2QL-tdzXPwg3X2NqMnLAg_8cg
+}

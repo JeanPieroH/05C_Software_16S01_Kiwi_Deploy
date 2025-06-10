@@ -1,0 +1,15 @@
+meta {
+  name: 01-student-me
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:8000/student/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtaWNoYWVsQGdtYWlsLmNvbSIsInJvbGUiOiJURUFDSEVSIiwiZXhwIjoxNzQ5MTUzMzUxLCJpYXQiOjE3NDkwNjY5NTF9.bhU6oOw33bpInIzY1v32ic1smsL7RtmchwJB-OvivCg
+}

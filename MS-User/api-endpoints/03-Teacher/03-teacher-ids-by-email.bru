@@ -1,0 +1,21 @@
+meta {
+  name: 03-teacher-ids-by-email
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/teacher/ids-by-email
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1QGdtYWlsLmNvbSIsInJvbGUiOiJTVFVERU5UIiwiZXhwIjoxNzQ5MTY3MDI2LCJpYXQiOjE3NDkwODA2MjZ9.ATapu2MKr2sSjvKoprMcg1KJEhlQ8b8jI51cqzXREn8
+}
+
+body:json {
+  {
+    "emails": ["4@gmail.com","5@gmail.com"]
+  }
+}
