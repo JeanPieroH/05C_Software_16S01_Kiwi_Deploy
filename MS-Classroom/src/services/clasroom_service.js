@@ -16,7 +16,7 @@ exports.createClassroom = (name, description, teachers = []) => {
 //-------------------------------------
 exports.addStudentsByIdsToClassroom = async (classroomId, studentIds) => {
   if (isNaN(classroomId) || classroomId <= 0) throw new ServiceError("Invalid classroom ID provided.", 400);
-  if (!Array.isArray(studentIds) || studentIds.length === 0) throw new ServiceError("Invalid input: 'students_id' array is required and must not be empty.", 400);
+  //if (!Array.isArray(studentIds) || studentIds.length === 0) throw new ServiceError("Invalid input: 'students_id' array is required and must not be empty.", 400);
 
   const classroom = await classroomRepo.findClassroomById(classroomId);
   if (!classroom) throw new ServiceError(`Classroom with ID ${classroomId} not found.`, 404);
@@ -38,7 +38,7 @@ exports.addStudentsByIdsToClassroom = async (classroomId, studentIds) => {
 //-------------------------------------
 exports.addTeachersByIdsToClassroom = async (classroomId, teacherIds) => {
   if (isNaN(classroomId) || classroomId <= 0) throw new ServiceError("Invalid classroom ID provided.", 400);
-  if (!Array.isArray(teacherIds) || teacherIds.length === 0) throw new ServiceError("Invalid input: 'teachers_id' array is required and must not be empty.", 400);
+  //if (!Array.isArray(teacherIds) || teacherIds.length === 0) throw new ServiceError("Invalid input: 'teachers_id' array is required and must not be empty.", 400);
 
   const classroom = await classroomRepo.findClassroomById(classroomId);
   if (!classroom) throw new ServiceError(`Classroom with ID ${classroomId} not found.`, 404);
@@ -87,9 +87,7 @@ exports.getClassroomsByTeacherId = async (teacherId) => {
 
   const classroomTeachers = await classroomRepo.findClassroomsByTeacherId(teacherId);
 
-  if (classroomTeachers.length === 0) {
-    throw new ServiceError(`No se encontraron aulas para el docente con ID ${teacherId}.`, 404);
-  }
+  
 
   return classroomTeachers.map(ct => ({
     id: ct.classroom.id,

@@ -342,3 +342,35 @@ class QuizResultDetailOutput(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class StudentPointsOutput(BaseModel):
+    id_student: int = Field(..., description="ID del estudiante.")
+    points_obtained: int = Field(..., description="Puntos obtenidos por el estudiante en el quiz.")
+
+    class Config:
+        from_attributes = True
+
+class QuizWithAttemptStatusOutput(BaseModel):
+    id: int = Field(...)
+    title: str = Field(...)
+    instruction: Optional[str] = Field(None)
+    total_points: Optional[int] = Field(None)
+    start_time: Optional[datetime] = Field(None)
+    end_time: Optional[datetime] = Field(None)
+    created_at: datetime = Field(...)
+    updated_at: Optional[datetime] = Field(None)
+    student_has_attemped: bool = Field(..., description="Indica si el estudiante ha intentado este quiz.")
+
+    class Config:
+        from_attributes = True
+
+class StudentQuizResultOutput(BaseModel):
+    """
+    Esquema de salida para representar el ID de un estudiante y los puntos obtenidos en un quiz.
+    """
+    id_student: int = Field(..., description="ID del estudiante que rindió el quiz.")
+    points_obtained: int = Field(..., description="Puntos obtenidos por el estudiante en el quiz.")
+
+    class Config:
+        from_attributes = True

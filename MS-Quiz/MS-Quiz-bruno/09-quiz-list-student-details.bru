@@ -1,0 +1,11 @@
+meta {
+  name: 09-quiz-list-student-details
+  type: http
+  seq: 10
+}
+
+get {
+  url: http://localhost:8001/api/v1/quiz/classroom/1/student/2
+  body: json
+  auth: inherit
+}

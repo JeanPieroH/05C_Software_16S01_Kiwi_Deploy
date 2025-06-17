@@ -60,11 +60,23 @@ public class StudentService{
 
     public Student addPoints(Long id_student, int points){
         Student student=studentRepository.findById(id_student).orElseThrow(() -> new NotFoundException("Student not found"));
-        student.setCoinEarned(student.getCoinEarned()+points);
-        student.setCoinAvailable(student.getCoinAvailable()+points);
+        student.setCoin_earned(student.getCoin_earned()+points);
+        student.setCoin_available(student.getCoin_available()+points);
 
         studentRepository.save(student);
         return student;
+    }
+
+    public Boolean buyCharacter(Long id_student, int cost){
+        Student student = studentRepository.findById(id_student).orElseThrow(() -> new NotFoundException("Student not found"));
+
+        if (student.getCoin_available() < cost) {
+            return false;
+        }
+
+        student.setCoin_available(student.getCoin_available() - cost);
+        studentRepository.save(student);
+        return true;
     }
 
 } 

@@ -1,0 +1,15 @@
+meta {
+  name: 03-quiz-list
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://localhost:8000/quiz/5/results
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkb2NlbnRlQGtpd2kuY29tIiwicm9sZSI6IlRFQUNIRVIiLCJleHAiOjE3NTAyNzY2MDcsImlhdCI6MTc1MDE5MDIwN30.knx98TVikEK-36wdZz77qJdropYajfgq0cAncxvePgM
+}

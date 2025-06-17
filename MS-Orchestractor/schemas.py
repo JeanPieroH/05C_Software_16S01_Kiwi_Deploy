@@ -455,3 +455,42 @@ class Store(BaseModel):
     accesory: Optional[list[Accessory]]= Field(None, description="lista de accesory en la tienda")
 
 
+class QuizWithAttemptStatusOutput(BaseModel):
+    id: int = Field(...)
+    title: str = Field(...)
+    instruction: Optional[str] = Field(None)
+    total_points: Optional[int] = Field(None)
+    start_time: Optional[datetime] = Field(None)
+    end_time: Optional[datetime] = Field(None)
+    created_at: datetime = Field(...)
+    updated_at: Optional[datetime] = Field(None)
+    student_has_attemped: bool = Field(..., description="Indica si el estudiante ha intentado este quiz.")
+
+    class Config:
+        from_attributes = True
+
+class CharacterPurchase(BaseModel):
+    characterId: int
+    userId: int
+
+class CharacterSetPrincipal(BaseModel):
+    userId: int
+    oldCharacterId: int
+    newCharacterId: int
+
+class StudentDetailOutput(BaseModel):
+    id: int = Field(..., description="ID único del estudiante.")
+    name: str = Field(..., description="Nombre del estudiante.")
+    last_name: str = Field(..., description="Apellido del estudiante.")
+    email: str = Field(..., description="Correo electrónico del estudiante.")
+    cel_phone: Optional[str] = Field(None, description="Número de teléfono celular del estudiante.")
+    role: str = Field(..., description="Rol del usuario (ej. 'STUDENT').")
+    emotion: Optional[str] = Field(None, description="Emoción actual del estudiante.")
+    coin_earned: int = Field(..., description="Monedas ganadas por el estudiante.")
+    coin_available: int = Field(..., description="Monedas disponibles para el estudiante.")
+    points_obtained: int = Field(..., description="Puntos obtenidos por el estudiante en el quiz.")
+
+    class Config:
+        from_attributes = True
+
+

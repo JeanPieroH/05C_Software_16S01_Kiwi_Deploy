@@ -4,11 +4,13 @@ from utils.auth import verify_token
 import httpx
 import os
 import json
+from dotenv import load_dotenv
 
+load_dotenv()
 router = APIRouter(dependencies=[Depends(verify_token)])
-users_url = os.getenv("USERS_API_URL", "http://localhost:8080")
-classrooms_url = os.getenv("CLASSROOMS_API_URL", "http://localhost:3000")
-quices_url = os.getenv("QUICES_API_URL", "http://localhost:8001/api/v1")
+classrooms_url = os.getenv("CLASSROOMS_URL", "http://localhost:8003")
+quices_url = os.getenv("QUICES_URL", "http://localhost:8002/api/v1")
+users_url = os.getenv("USERS_URL", "http://localhost:8001")
 
 
 

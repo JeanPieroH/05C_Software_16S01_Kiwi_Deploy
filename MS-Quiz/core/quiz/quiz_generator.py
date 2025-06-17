@@ -158,7 +158,7 @@ class QuizGenerator:
                 ]
             }}
             ```
-            Asegúrate de que `start_time` y `end_time` sean fechas y horas ISO 8601 válidas en UTC (terminadas en 'Z'), reflejando el momento actual y una hora después, respectivamente. La calidad de las preguntas, la correcta asignación de puntos para sumar {point_max} y la combinación de competencias es fundamental.
+            Asegúrate de que `start_time` y `end_time` sean fechas y horas ISO 8601 válidas (sin terminacion Z) , reflejando el momento actual y una hora después, respectivamente. La calidad de las preguntas, la correcta asignación de puntos para sumar {point_max} y la combinación de competencias es fundamental.
             """
 
         model = genai.GenerativeModel(
@@ -337,7 +337,7 @@ class QuizGenerator:
                 ]
             }}
             ```
-            Asegúrate de que `start_time` y `end_time` sean fechas y horas ISO 8601 válidas en UTC (terminadas en 'Z'), reflejando el momento actual y una hora después, respectivamente. La calidad de las preguntas, la correcta asignación de puntos para sumar {point_max} y la combinación de competencias es fundamental.
+            Asegúrate de que `start_time` y `end_time` sean fechas y horas ISO 8601 válidas (sin terminacion Z), reflejando el momento actual y una hora después, respectivamente. La calidad de las preguntas, la correcta asignación de puntos para sumar {point_max} y la combinación de competencias es fundamental.
             """
 
         model = genai.GenerativeModel(

@@ -1,8 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.future import select
-from sqlalchemy import text # Importar text para ejecutar SQL plano
-
 
 from config.settings import get_settings
 
@@ -28,8 +26,7 @@ async def init_db():
 
     async with engine.begin() as conn:
         try:
-            await conn.execute(text("SET search_path TO public;"))
-            #await conn.run_sync(Base.metadata.create_all)
+            await conn.run_sync(Base.metadata.create_all)
             print("Todas las tablas han sido creadas.")
         except Exception as e: # ¡Cambia 'except:' por 'except Exception as e:'!
             print(f"No se pudo crear las tablas. Error: {e}") # Imprime el error real

@@ -9,6 +9,8 @@ from core.quiz.quiz_service import QuizService
 from core.quiz.quiz_generator import QuizGenerator
 import json
 import logging
+from config.settings import get_settings
+
 
 router = APIRouter()
 
@@ -195,7 +197,84 @@ async def get_quiz_student_result_endpoint(
             detail="Ocurrió un error inesperado al recuperar los resultados del quiz."
         )
 
-        
+
+@router.get(
+    "/{quiz_id}/students-points",
+    response_model=List[StudentPointsOutput],
+    status_code=status.HTTP_200_OK,
+    summary="Obtener puntos de estudiantes por quiz",
+    description="Recupera los IDs de los estudiantes y sus puntos obtenidos para un quiz específico."
+)
+async def get_students_points_endpoint(
+    quiz_id: int,
+    db: AsyncSession = Depends(get_db)
+) -> List[StudentPointsOutput]:
+    try:
+        students_points = await QuizService.get_students_points_for_quiz(db, quiz_id)
+        if not students_points:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No se encontraron estudiantes o puntos para el Quiz ID {quiz_id}."
+            )
+        return students_points
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error al obtener puntos de estudiantes para el quiz {quiz_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Ocurrió un error inesperado al recuperar los puntos de los estudiantes."
+        )
+@router.get(
+    "/classroom/{classroom_id}/student/{student_id}",
+    response_model=List[QuizWithAttemptStatusOutput],
+    status_code=status.HTTP_200_OK,
+    summary="Obtener quizzes de un aula con estado de intento del estudiante",
+    description="Retorna la lista de quizzes de un aula específica, indicando si un estudiante dado ha intentado cada quiz."
+)
+async def get_quizzes_by_classroom_with_attempt_status_endpoint(
+    classroom_id: int,
+    student_id: int,
+    db: AsyncSession = Depends(get_db)
+) -> List[QuizWithAttemptStatusOutput]:
+    try:
+        quizzes = await QuizService.get_quizzes_by_classroom_with_attempt_status(db, classroom_id, student_id)
+        if not quizzes:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No se encontraron quizzes para el Classroom ID {classroom_id} o el Estudiante ID {student_id}."
+            )
+        return quizzes
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error al obtener quizzes para el aula {classroom_id} y estudiante {student_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Ocurrió un error inesperado al recuperar los quizzes."
+        )
+
+@router.get("/{quiz_id}/results", response_model=List[StudentQuizResultOutput])
+async def get_quiz_student_results(
+    quiz_id: int,
+    db: AsyncSession = Depends(get_db)
+) -> List[StudentQuizResultOutput]:
+    """
+    Obtiene la lista de estudiantes que rindieron un quiz, junto con sus puntos obtenidos.
+    """
+    try:
+        results = await QuizService.get_students_quiz_results(db, quiz_id)
+        return results
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {e}")
 # @router.get("/{quiz_id}", response_model=QuizSchema)
 # async def get_quiz(
 #     quiz_id: int,

@@ -2,11 +2,12 @@ from fastapi import APIRouter, HTTPException, Header
 from schemas import DtoUserLogin, DtoUserRegister, Token
 import httpx
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 router = APIRouter()
-users_url = os.getenv("USERS_API_URL", "http://localhost:8080")
-classrooms_url = os.getenv("CLASSROOMS_API_URL", "http://localhost:3000")
-quices_url = os.getenv("QUICES_API_URL", "http://localhost:8001/api/v1")
+users_url = os.getenv("USERS_URL", "http://localhost:8001")
 
 print("USERS_API_URL:", users_url)
 
@@ -20,6 +21,8 @@ async def login(userLogin: DtoUserLogin):
             return res.json()
         except httpx.HTTPStatusError as e:
             raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+        except httpx.ConnectError:
+            raise HTTPException(status_code=503, detail=f"No se pudo conectar al servicio de usuarios en {users_url}. Asegúrate de que el servicio esté en ejecución.")
 
 @router.post("/register", response_model=Token)
 async def register(userRegister: DtoUserRegister):
@@ -30,4 +33,6 @@ async def register(userRegister: DtoUserRegister):
             return res.json()
         except httpx.HTTPStatusError as e:
             raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-        
+        except httpx.ConnectError:
+            raise HTTPException(status_code=503, detail=f"No se pudo conectar al servicio de usuarios en {users_url}. Asegúrate de que el servicio esté en ejecución.")
+

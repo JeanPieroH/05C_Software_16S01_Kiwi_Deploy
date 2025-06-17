@@ -16,8 +16,8 @@ public class Student extends Usuario{
     private Emotional emotion; 
 
     @Column(name = "coin_earned")
-    private int coinEarned;
+    private int coin_earned;
 
     @Column(name = "coin_available")
-    private int coinAvailable;
+    private int coin_available;
 }

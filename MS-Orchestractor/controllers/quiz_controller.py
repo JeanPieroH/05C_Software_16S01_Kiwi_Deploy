@@ -1,18 +1,17 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, UploadFile, File, Form
-# from schemas import Quiz, QuizGenerationInput
 from utils.auth import verify_token
 import httpx
 import os
 from schemas import *
-timeout = httpx.Timeout(30.0)  # 30 segundos
+from dotenv import load_dotenv
 
+load_dotenv()
+timeout = httpx.Timeout(30.0)
 
 router = APIRouter(dependencies=[Depends(verify_token)])
 
-users_url = os.getenv("USERS_API_URL", "http://localhost:8080")
-classrooms_url = os.getenv("CLASSROOMS_API_URL", "http://localhost:3000")
-quices_url = os.getenv("QUICES_API_URL", "http://localhost:8001/api/v1")
-
+quices_url = os.getenv("QUICES_URL", "http://localhost:8002/api/v1")
+users_url = os.getenv("USERS_URL", "http://localhost:8001")
 
 
 @router.get("/{quiz_id}", response_model=QuizDetail)
@@ -31,11 +30,35 @@ async def get_quiz(quiz_id: int,student_id: int, request: Request):
         try:
             response = await client.get(f"{quices_url}/quiz/{quiz_id}/student/{student_id}/result")
             response.raise_for_status()
-
-            
             return response.json()
         except httpx.HTTPStatusError as e:
             raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+
+@router.get("/{quiz_id}/results", response_model=List[StudentDetailOutput])
+async def get_quiz(quiz_id: int, request: Request):
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(f"{quices_url}/quiz/{quiz_id}/results")
+            response.raise_for_status()
+            quiz_results_data = response.json()
+            student_ids = [result["id_student"] for result in quiz_results_data]
+
+            users_info_response  = await client.post(f"{users_url}/student/by-ids",json={"students_id": student_ids}, headers={"Authorization": request.headers.get("authorization")})
+            users_info_response.raise_for_status()
+    
+            users_data = users_info_response.json()
+
+            combined_results = []
+            for user in users_data:
+                for quiz_result_item in quiz_results_data:
+                    if user["id"] == quiz_result_item["id_student"]:
+                        user["points_obtained"] = quiz_result_item["points_obtained"]
+                        break
+                combined_results.append(user)
+            return combined_results
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+
         
 # @router.post("/{teacher_id}/classroom/{classroom_id}/quiz", status_code=201)
 # async def create_quiz(teacher_id: int, classroom_id: int, quiz: Quiz, request: Request):

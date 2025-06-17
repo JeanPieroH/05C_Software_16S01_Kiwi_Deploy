@@ -1,11 +1,11 @@
 meta {
-  name: 01-student-me
+  name: 04-student-quiz-list
   type: http
-  seq: 1
+  seq: 4
 }
 
 get {
-  url: http://localhost:8000/student/me
+  url: http://localhost:8000/student/classroom/1/student/2/quiz-list
   body: json
   auth: bearer
 }

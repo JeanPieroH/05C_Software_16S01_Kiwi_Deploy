@@ -58,6 +58,12 @@ public class StudentController {
         return ResponseEntity.ok(updatedStudent);
     }
 
+    @PostMapping("/{id}/buy-character/{cost}")
+    public ResponseEntity<Boolean> buy(@PathVariable("id") Long id,@PathVariable("cost") int cost) { 
+        boolean  resultado= studentService.buyCharacter(id, cost);
+        return ResponseEntity.ok(resultado);
+    }
+
 
 
 }

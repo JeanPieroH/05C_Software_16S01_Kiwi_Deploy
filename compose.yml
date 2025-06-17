@@ -38,7 +38,7 @@ services:
       POSTGRES_DATABASE: "software_16s01_kiwi"
       JWT_SECRET: "brwb1w556165b16v156aafasf"
       MAIL_USERNAME: "proyectodbp1@gmail.com"
-      MAIL_PASSWORD: "nsfr upkz ajfa pta"
+      MAIL_PASSWORD: "nsfr upkz ajfa pt"
     networks:
       - my_network
     expose:

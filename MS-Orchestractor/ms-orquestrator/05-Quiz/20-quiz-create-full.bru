@@ -7,7 +7,11 @@ meta {
 post {
   url: http://localhost:8000/quiz/create
   body: json
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiQGdtYWlsLmNvbSIsInJvbGUiOiJURUFDSEVSIiwiZXhwIjoxNzUwMDQyOTYyLCJpYXQiOjE3NDk5NTY1NjJ9.iQEDPbC68Ida4ubjrEa9T64sh52AaE39mg5YIofO9mo
 }
 
 body:json {
@@ -25,7 +29,7 @@ body:json {
                   "answer_base": {
                       "type": "base_text"
                   },
-                  "compenteces_id": [1,2]
+                  "competences_id": [1,2]
               },
               {
                   "statement": "enunciado de la pregunta 2",
@@ -40,7 +44,7 @@ body:json {
                           "1857"
                       ]
                   },
-                  "compenteces_id": [1]
+                  "competences_id": [1]
               }
           ]
   }

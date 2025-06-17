@@ -2,7 +2,7 @@ from fastapi import Request, HTTPException
 import httpx
 import os
 
-USERS_URL = os.getenv("USERS_API_URL", "http://localhost:8080")
+USERS_URL = os.getenv("USERS_URL", "http://localhost:8001")
         
 async def verify_token(request: Request):
     async with httpx.AsyncClient() as client:
