@@ -4,3 +4,4 @@ uvicorn[standard]
 httpx
 email-validator
 python-dotenv
+
