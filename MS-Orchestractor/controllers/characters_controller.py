@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 router = APIRouter(dependencies=[Depends(verify_token)])
 characters_url = os.getenv("CHARACTER_URL", "http://localhost:8004")
-users_url = os.getenv("USERS_URL", "http://localhost:8001")
+users_url = os.getenv("USERS_API_URL", "http://localhost:8001")
 
 
 @router.get("/store")
