@@ -8,8 +8,12 @@ import logging
 import json
 import google.generativeai as genai
 from config.settings import get_settings
+import backoff
+import httpx
+
 settings = get_settings()
 
+genai.configure(api_key=settings.GOOGLE_API_KEY)
 
 
 from db.models.quiz import *
@@ -95,216 +99,15 @@ class QuizService:
             "total_points": new_quiz.total_points,
             "questions": output_questions
         }
-    
-    @staticmethod
-    async def _calculate_question_feedback(question: Question, submitted_answer_data: Dict[str, Any]) -> str:
-        model = genai.GenerativeModel(
-            settings.GEMINI_MODEL,
-            generation_config={"temperature": 0.5, "response_mime_type": "text/plain"}
-        )
 
-        student_answer = ""
-        if submitted_answer_data["type"] == "submitted_text":
-            student_answer = submitted_answer_data.get("answer_written", "No especificada")
-        elif submitted_answer_data["type"] == "submitted_multiple_option":
-            student_answer = submitted_answer_data.get("option_select", "No seleccionada")
-        
-        prompt = f"""
-        Genera un feedback conciso y constructivo para la respuesta de un estudiante a una pregunta de quiz.
-        Considera la pregunta, la respuesta correcta y la respuesta enviada por el estudiante.
-        El feedback debe:
-        - Indicar si la respuesta del estudiante fue correcta o incorrecta.
-        - Si es incorrecta, explicar brevemente por qué o qué faltó, y/o recordar la respuesta correcta.
-        - Ser de no más de 2-3 oraciones.
-        - Estar en español.
-
-        ---
-        Pregunta: "{question.statement}"
-        Respuesta Correcta Esperada: "{question.answer_correct}"
-        Tipo de Pregunta: {question.answer_base.type.replace('base_', '').replace('_', ' ')}
-        Respuesta del Estudiante: "{student_answer}"
-        ---
-
-        Feedback:
-        """
-
-        feedback_generado_ia = ""
-        try:
-            response = await model.generate_content_async(prompt, request_options={"timeout": 60})
-            feedback_generado_ia = response.text.strip()
-            if feedback_generado_ia:
-                return feedback_generado_ia
-            else:
-                print("Advertencia: Gemini devolvió un feedback vacío. Usando feedback predeterminado.")
-
-        except Exception as e:
-            print(f"Error al generar feedback con Gemini para la pregunta {question.id}: {e}")
-            pass 
-
-        if submitted_answer_data["type"] == "submitted_text":
-            if submitted_answer_data.get("answer_written") == question.answer_correct:
-                return "¡Correcto! Tu respuesta es precisa."
-            else:
-                return f"Incorrecto. La respuesta esperada era: '{question.answer_correct}'."
-        elif submitted_answer_data["type"] == "submitted_multiple_option":
-            correct_option = question.answer_correct 
-            if submitted_answer_data.get("option_select") == correct_option:
-                return "¡Muy bien! Esa es la opción correcta."
-            else:
-                return f"Incorrecto. La opción correcta era: '{correct_option}'."
-        
-        return "Feedback no disponible para este tipo de respuesta."
-
-    @staticmethod
-    async def _calculate_general_feedback(
-        quiz: Quiz,
-        total_obtained_points: int,
-        student_answers_details: List[Dict[str, Any]]
-    ) -> str:
-        model = genai.GenerativeModel(
-            settings.GEMINI_MODEL,
-            generation_config={"temperature": 0.6, "response_mime_type": "text/plain"}
-        )
-
-        if quiz.total_points is None or quiz.total_points == 0:
-            return "Feedback general no disponible (puntos del quiz no definidos o total de puntos es cero)."
-
-        percentage = (total_obtained_points / quiz.total_points) * 100 if quiz.total_points > 0 else 0
-
-        questions_details = []
-        for i, detail in enumerate(student_answers_details):
-            question = detail['question']
-            submitted_answer = detail['submitted_answer_data']
-            points_obtained_for_this_question = detail['points_obtained'] # Nuevo dato
-
-            student_response_text = ""
-            if submitted_answer["type"] == "submitted_text":
-                student_response_text = submitted_answer.get("answer_written", "No especificada")
-            elif submitted_answer["type"] == "submitted_multiple_option":
-                student_response_text = submitted_answer.get("option_select", "No seleccionada")
-            else:
-                student_response_text = "Tipo de respuesta no soportado para análisis."
-
-            questions_details.append(f"""
-            Pregunta {i+1}: {question.statement}
-            Respuesta Correcta: {question.answer_correct}
-            Respuesta del Estudiante: {student_response_text}
-            Puntos Obtenidos: {points_obtained_for_this_question}/{question.points}
-            """)
-        
-        questions_details_str = "\n".join(questions_details)
-
-        prompt = f"""
-        Genera un feedback general y constructivo para un estudiante sobre su desempeño en un quiz.
-        Utiliza la siguiente información para proporcionar un análisis conciso pero útil, destacando puntos fuertes y áreas de mejora.
-        El feedback debe ser amigable, motivador y conciso (máximo 4-5 oraciones), en español.
-
-        ---
-        Detalles del Quiz:
-        Título del Quiz: "{quiz.title}"
-        Instrucciones del Quiz: "{quiz.instruction or 'No se proporcionaron instrucciones.'}"
-        Puntuación Total Posible: {quiz.total_points}
-        Puntuación Obtenida por el Estudiante: {total_obtained_points}
-        Porcentaje Obtenido: {percentage:.2f}%
-
-        Detalle de Preguntas y Respuestas:
-        {questions_details_str}
-        ---
-
-        Análisis del Desempeño y Feedback General:
-        """
-
-        general_feedback_ia = ""
-        try:
-            response = await model.generate_content_async(prompt, request_options={"timeout": 90})
-            general_feedback_ia = response.text.strip()
-            if general_feedback_ia:
-                return general_feedback_ia
-            else:
-                print("Advertencia: Gemini devolvió un feedback general vacío. Usando feedback predeterminado.")
-
-        except Exception as e:
-            print(f"Error al generar feedback general con Gemini para el quiz {quiz.id}: {e}")
-            pass 
-        
-        if percentage == 100:
-            return "¡Felicidades! Has respondido todas las preguntas correctamente y obtenido la máxima puntuación. ¡Excelente!"
-        elif percentage >= 75:
-            return "Excelente trabajo, has demostrado un gran conocimiento en general. Sigue así."
-        elif percentage >= 50:
-            return "Buen esfuerzo en el quiz. Hay áreas de oportunidad para mejorar, sigue practicando."
-        else:
-            return "Necesitas repasar algunos conceptos clave. No te desanimes, ¡sigue practicando para mejorar tus habilidades!"
-    @staticmethod
-    async def _calculate_points(question: Question, student_answer: str) -> int:
-        """
-        Calcula los puntos para una pregunta, permitiendo puntajes parciales para preguntas de texto
-        evaluadas por Gemini.
-        """
-        # Para preguntas de opción múltiple, la evaluación sigue siendo directa.
-        if question.answer_base.type == "base_multiple_option":
-            return question.points if student_answer == question.answer_correct else 0
-        
-        # Para preguntas de texto, usamos Gemini para evaluar y asignar puntos parciales.
-        elif question.answer_base.type == "base_text":
-            model = genai.GenerativeModel(
-                settings.GEMINI_MODEL,
-                generation_config={"temperature": 0.2, "response_mime_type": "text/plain"}
-            )
-
-            # Nuevo prompt para solicitar un número de 0 a 100
-            prompt = f"""
-            Evalúa la 'Respuesta del Estudiante' en comparación con la 'Respuesta Correcta Esperada' para la 'Pregunta' dada.
-            Tu objetivo es determinar el porcentaje de corrección de la respuesta del estudiante.
-
-            Considera la exhaustividad, precisión, y si aborda los puntos clave de la respuesta esperada.
-            Si la respuesta es completamente correcta y cumple con todos los requisitos, asigna 100%.
-            Si es parcialmente correcta (ej. cubre algunos aspectos, pero le faltan otros), asigna un porcentaje proporcional (ej. 50%, 75%).
-            Si es completamente incorrecta o irrelevante, asigna 0%.
-
-            Responde ÚNICAMENTE con un NÚMERO ENTERO entre 0 y 100 (sin el signo de porcentaje, ni texto adicional).
-
-            ---
-            Pregunta: "{question.statement}"
-            Respuesta Correcta Esperada: "{question.answer_correct}"
-            Respuesta del Estudiante: "{student_answer}"
-            ---
-
-            Porcentaje de Corrección:
-            """
-            
-            try:
-                response = await model.generate_content_async(prompt, request_options={"timeout": 45}) # Timeout ligeramente aumentado
-                raw_percentage = response.text.strip()
-                
-                # Intentar convertir la respuesta de Gemini a un entero
-                try:
-                    percentage_correct = int(raw_percentage)
-                    # Asegurarse de que el porcentaje esté dentro del rango válido [0, 100]
-                    percentage_correct = max(0, min(100, percentage_correct))
-                except ValueError:
-                    print(f"Advertencia: Gemini devolvió una respuesta no numérica para la pregunta {question.id}: '{raw_percentage}'. Asumiendo 0 puntos.")
-                    percentage_correct = 0 # Si la respuesta no es un número, asumimos 0%
-
-                # Calcular los puntos obtenidos basándose en el porcentaje
-                points_obtained = int(round((percentage_correct / 100) * question.points))
-                return points_obtained
-                    
-            except Exception as e:
-                print(f"Error al evaluar puntos con Gemini para la pregunta {question.id}: {e}")
-                # Fallback en caso de que Gemini falle: asumir 0 puntos
-                return 0
-        
-        # Si el tipo de pregunta no está definido o no se soporta para el cálculo automático de puntos.
-        return 0
- 
     @staticmethod
     async def process_student_submission(db: AsyncSession, submission_data: QuizSubmissionInput) -> Dict[str, Any]:
-        
+        # 1. Obtener el quiz
         quiz = (await db.execute(select(Quiz).filter_by(id=submission_data.quiz_id))).scalar_one_or_none()
         if not quiz:
             raise ValueError(f"Quiz con ID {submission_data.quiz_id} no encontrado.")
 
+        # 2. Obtener o crear Quiz_Student
         quiz_student = (await db.execute(
             select(Quiz_Student).filter_by(id_quiz=submission_data.quiz_id, id_student=submission_data.student_id)
         )).scalar_one_or_none()
@@ -314,78 +117,250 @@ class QuizService:
                 id_quiz=submission_data.quiz_id,
                 id_student=submission_data.student_id,
                 is_present_quiz=submission_data.is_present,
-                points_obtained=0, # Se actualizará después
-                feedback_general_automated=None, # Se calculará después
-                feedback_general_teacher=None    # Inicializar con NULL
+                points_obtained=0,
+                feedback_general_automated=None,
+                feedback_general_teacher=None
             )
             db.add(quiz_student)
         else:
+            # Si el Quiz_Student ya existe, actualizar y limpiar respuestas previas
             quiz_student.is_present_quiz = submission_data.is_present
-            quiz_student.points_obtained = 0 # Reiniciar para recalcular
-            quiz_student.feedback_general_teacher = None # Mantener/Reiniciar a NULL
+            quiz_student.points_obtained = 0
+            quiz_student.feedback_general_teacher = None
+            
+            # Obtener y eliminar respuestas de preguntas previas del estudiante para este quiz
+            # Asegúrate de cargar la relación answer_submitted para que el cascade de eliminación funcione
+            # si lo tienes configurado en tus modelos para la eliminación de Answer_Submitted a través de Question_Student
+            existing_question_students = (await db.execute(
+                select(Question_Student).where(
+                    Question_Student.id_student == submission_data.student_id,
+                    Question_Student.id_question.in_([q.question_id for q in submission_data.questions])
+                ).options(selectinload(Question_Student.answer_submitted)) # Importante para eliminación en cascada
+            )).scalars().all()
+            
+            for qs in existing_question_students:
+                # Aquí es crucial que 'db.delete' sea 'awaited'.
+                # Si tus relaciones están bien configuradas con `cascade="all, delete-orphan"`,
+                # con eliminar `Question_Student` se eliminará `Answer_Submitted`.
+                await db.delete(qs)
+            
+        await db.flush() # Vaciar los cambios para que los nuevos Quiz_Student se hagan persistentes
+
+        questions_for_gemini = []
+        questions_map = {} 
+
+        # 3. Procesar cada pregunta y preparar datos para Gemini
+        for q_sub_data in submission_data.questions:
+            # Cargar la pregunta y su respuesta base
+            question = (await db.execute(
+                select(Question).filter_by(id=q_sub_data.question_id, quiz_id=submission_data.quiz_id)
+                .options(selectinload(Question.answer_base)) # Cargar answe_base para acceder a 'type'
+            )).scalar_one_or_none()
+            
+            if not question:
+                raise ValueError(f"Pregunta con ID {q_sub_data.question_id} no encontrada o no pertenece al quiz {submission_data.quiz_id}.")
+            
+            if not question.answer_base or not question.answer_base.type:
+                raise ValueError(f"La respuesta base para la pregunta {q_sub_data.question_id} no está definida o no tiene un tipo.")
+
+            questions_map[question.id] = question
+            
+            submitted_answer_data = q_sub_data.answer_submitted.model_dump()
+            student_answer_text = ""
+
+            if submitted_answer_data["type"] == "submitted_text":
+                student_answer_text = submitted_answer_data.get("answer_written", "No especificada")
+            elif submitted_answer_data["type"] == "submitted_multiple_option":
+                student_answer_text = submitted_answer_data.get("option_select", "No seleccionada")
+            else:
+                student_answer_text = "Tipo de respuesta no soportado para análisis."
+            
+            questions_for_gemini.append({
+                "question_id": question.id,
+                "statement": question.statement,
+                "correct_answer": question.answer_correct,
+                "question_type": question.answer_base.type.replace('base_', '').replace('_', ' '),
+                "student_answer": student_answer_text,
+                "max_points": question.points
+            })
         
-        await db.flush()
+        quiz_total_points_calc = sum(q["max_points"] for q in questions_for_gemini)
+        if quiz.total_points == 0:
+            quiz.total_points = quiz_total_points_calc
+
+        # 4. Llamada Única a Gemini
+        model = genai.GenerativeModel(
+            settings.GEMINI_MODEL,
+            generation_config={"temperature": 0.5, "response_mime_type": "application/json"}
+        )
+
+        # El prompt de Gemini va aquí, tal como lo tienes
+        prompt = f"""
+        Como un evaluador inteligente para un sistema de quizzes, tu tarea es analizar un conjunto de preguntas y las respuestas de un estudiante, y luego proporcionar un feedback general sobre el desempeño del estudiante en todo el quiz.
+
+        Para cada pregunta individual, debes proporcionar:
+        1. Una evaluación del porcentaje de corrección de la respuesta del estudiante (un número entero entre 0 y 100).
+        2. Un feedback conciso y constructivo para el estudiante (máximo 2-3 oraciones).
+
+        Las preguntas de tipo "text" requieren una evaluación más profunda de la coherencia, precisión y exhaustividad de la respuesta del estudiante con respecto a la respuesta correcta esperada.
+        Las preguntas de tipo "multiple option" son de evaluación binaria: 100% si la respuesta es idéntica a la correcta, 0% si no lo es.
+
+        Finalmente, genera un **feedback general** para el estudiante sobre todo el quiz. Este feedback general debe ser conciso (máximo 4-5 oraciones), amigable, motivador, y resumir el desempeño general, destacando puntos fuertes y áreas de mejora.
+
+        La salida debe ser un objeto JSON que contenga dos campos principales:
+        - `evaluations`: Una lista de objetos, donde cada objeto representa una pregunta evaluada con los campos:
+            - `question_id`: El ID de la pregunta.
+            - `percentage_correct`: El porcentaje de corrección de la respuesta del estudiante (0-100).
+            - `feedback`: El feedback constructivo para la pregunta.
+        - `general_feedback`: Una cadena de texto con el feedback general del quiz.
+
+        ---
+        Detalles del Quiz:
+        Título del Quiz: "{quiz.title}"
+        Instrucciones del Quiz: "{quiz.instruction or 'No se proporcionaron instrucciones.'}"
+        Puntuación Total Posible (calculada de las preguntas): {quiz_total_points_calc}
+
+        Lista de Preguntas y Respuestas del Estudiante a Evaluar:
+        {json.dumps(questions_for_gemini, indent=2, ensure_ascii=False)}
+        ---
+
+        Formato de Salida JSON:
+        {{
+            "evaluations": [
+                {{
+                    "question_id": 1,
+                    "percentage_correct": 85,
+                    "feedback": "Tu respuesta es muy completa pero faltó mencionar el punto clave de X. Buen trabajo."
+                }},
+                {{
+                    "question_id": 2,
+                    "percentage_correct": 100,
+                    "feedback": "¡Correcto! Excelente selección de la opción."
+                }}
+            ],
+            "general_feedback": "¡Buen trabajo en el quiz! Demostraste un buen entendimiento general, especialmente en las preguntas de opción múltiple. Para mejorar aún más, enfócate en desarrollar respuestas más completas para las preguntas de texto."
+        }}
+        """
+        
+        gemini_response_json = {"evaluations": [], "general_feedback": "Feedback general no disponible."}
+        try:
+            response = await model.generate_content_async(prompt, request_options={"timeout": 180})
+            gemini_response_text = response.text.strip()
+            
+            gemini_response_json = json.loads(gemini_response_text)
+            
+            if not isinstance(gemini_response_json, dict) or "evaluations" not in gemini_response_json or "general_feedback" not in gemini_response_json:
+                raise ValueError("La respuesta de Gemini no tiene el formato JSON esperado.")
+            
+        except Exception as e:
+            print(f"Error al generar evaluaciones y feedback general con Gemini: {e}")
+            # Lógica de fallback si Gemini falla, tal como la tienes
+            total_obtained_points_fallback = 0
+            
+            for q_data in questions_for_gemini:
+                question = questions_map[q_data["question_id"]]
+                student_answer = q_data["student_answer"]
+                percentage_correct = 0
+                feedback = "Feedback no disponible."
+
+                if q_data["question_type"] == "multiple option":
+                    if student_answer == question.answer_correct:
+                        percentage_correct = 100
+                        feedback = "¡Muy bien! Esa es la opción correcta."
+                    else:
+                        percentage_correct = 0
+                        feedback = f"Incorrecto. La opción correcta era: '{question.answer_correct}'."
+                elif q_data["question_type"] == "text":
+                    if student_answer and student_answer.lower() == question.answer_correct.lower():
+                        percentage_correct = 100
+                        feedback = "¡Correcto! Tu respuesta es precisa."
+                    else:
+                        feedback = f"Incorrecto. La respuesta esperada era: '{question.answer_correct}'."
+                
+                points_obtained_fallback = int(round((percentage_correct / 100) * question.points))
+                total_obtained_points_fallback += points_obtained_fallback
+                
+                gemini_response_json["evaluations"].append({
+                    "question_id": q_data["question_id"],
+                    "percentage_correct": percentage_correct,
+                    "feedback": feedback
+                })
+            
+            percentage_fallback = (total_obtained_points_fallback / quiz_total_points_calc) * 100 if quiz_total_points_calc > 0 else 0
+            if percentage_fallback == 100:
+                gemini_response_json["general_feedback"] = "¡Felicidades! Has respondido todas las preguntas correctamente y obtenido la máxima puntuación. ¡Excelente!"
+            elif percentage_fallback >= 75:
+                gemini_response_json["general_feedback"] = "Excelente trabajo, has demostrado un gran conocimiento en general. Sigue así."
+            elif percentage_fallback >= 50:
+                gemini_response_json["general_feedback"] = "Buen esfuerzo en el quiz. Hay áreas de oportunidad para mejorar, sigue practicando."
+            else:
+                gemini_response_json["general_feedback"] = "Necesitas repasar algunos conceptos clave. No te desanimes, ¡sigue practicando para mejorar tus habilidades!"
 
         total_obtained_points = 0
         output_question_students = []
-        student_answers_for_general_feedback: List[Dict[str, Any]] = []
+
+        # 5. Procesar evaluaciones de Gemini y guardar en DB
+        evaluations_map = {eval_data["question_id"]: eval_data for eval_data in gemini_response_json.get("evaluations", [])}
 
         for q_sub_data in submission_data.questions:
-            question = (await db.execute(
-                select(Question).filter_by(id=q_sub_data.question_id, quiz_id=submission_data.quiz_id)
-            )).scalar_one_or_none()
-            if not question:
-                raise ValueError(f"Pregunta con ID {q_sub_data.question_id} no encontrada o no pertenece al quiz {submission_data.quiz_id}.")
+            question = questions_map[q_sub_data.question_id]
+            evaluation = evaluations_map.get(question.id)
 
-            answer_base = (await db.execute(
-                select(Answer_Base).filter_by(id=question.id_answer)
-            )).scalar_one_or_none()
-            if not answer_base:
-                raise ValueError(f"Respuesta base para la pregunta {q_sub_data.question_id} no encontrada.")
-
-            submitted_type = q_sub_data.answer_submitted.type
-            submitted_answer_instance = None
             student_points_for_question = 0
+            question_feedback_message = "Feedback no disponible."
             
-            # Convertir Pydantic sub-model a dict para pasar a _calculate_question_feedback
-            submitted_answer_dict = q_sub_data.answer_submitted.model_dump()
-            
-            question_feedback_message = await QuizService._calculate_question_feedback(
-                question, submitted_answer_dict
-            )
-            print(question_feedback_message)
+            if evaluation:
+                percentage_correct = evaluation.get("percentage_correct", 0)
+                percentage_correct = max(0, min(100, int(percentage_correct)))
+                student_points_for_question = int(round((percentage_correct / 100) * question.points))
+                question_feedback_message = evaluation.get("feedback", question_feedback_message)
+            else:
+                # Lógica de fallback para preguntas individuales
+                student_answer = ""
+                submitted_answer_data = q_sub_data.answer_submitted.model_dump()
+                if submitted_answer_data["type"] == "submitted_text":
+                    student_answer = submitted_answer_data.get("answer_written", "No especificada")
+                elif submitted_answer_data["type"] == "submitted_multiple_option":
+                    student_answer = submitted_answer_data.get("option_select", "No seleccionada")
 
-            if submitted_type == "submitted_text":
+                if question.answer_base.type == "base_multiple_option":
+                    if student_answer == question.answer_correct:
+                        student_points_for_question = question.points
+                        question_feedback_message = "¡Muy bien! Esa es la opción correcta."
+                    else:
+                        question_feedback_message = f"Incorrecto. La opción correcta era: '{question.answer_correct}'."
+                elif question.answer_base.type == "base_text":
+                    if student_answer and student_answer.lower() == question.answer_correct.lower():
+                        student_points_for_question = question.points
+                        question_feedback_message = "¡Correcto! Tu respuesta es precisa."
+                    else:
+                        question_feedback_message = f"Incorrecto. La respuesta esperada era: '{question.answer_correct}'."
+
+            # Crear y añadir la Answer_Submitted
+            submitted_answer_instance = None
+            if q_sub_data.answer_submitted.type == "submitted_text":
                 submitted_answer_instance = Submitted_Text(
                     type="submitted_text",
                     answer_written=q_sub_data.answer_submitted.answer_written
                 )
-                student_points_for_question =  await QuizService._calculate_points(question,q_sub_data.answer_submitted.answer_written)
-
-            elif submitted_type == "submitted_multiple_option":
+            elif q_sub_data.answer_submitted.type == "submitted_multiple_option":
                 submitted_answer_instance = Submitted_Multiple_Option(
                     type="submitted_multiple_option",
                     option_select=q_sub_data.answer_submitted.option_select
                 )
-                if not q_sub_data.answer_submitted.option_select: 
-                    raise ValueError(f"La opción seleccionada para la pregunta {q_sub_data.question_id} no puede estar vacía.")
-                if q_sub_data.answer_submitted.option_select == question.answer_correct:
-                    student_points_for_question = question.points
-            else:
-                raise ValueError(f"Tipo de respuesta enviada '{submitted_type}' no soportado.")
-            
             db.add(submitted_answer_instance)
-            await db.flush()
+            await db.flush() # Necesario para obtener el ID de 'submitted_answer_instance'
 
             total_obtained_points += student_points_for_question
 
+            # Crear y añadir Question_Student
             question_student = Question_Student(
                 id_student=submission_data.student_id,
                 id_question=q_sub_data.question_id,
                 id_answer_submitted=submitted_answer_instance.id,
                 points_obtained=student_points_for_question,
-                feedback_automated=question_feedback_message, # Asignar el feedback
-                feedback_teacher=None # Inicializar con NULL
+                feedback_automated=question_feedback_message,
+                feedback_teacher=None
             )
             db.add(question_student)
 
@@ -393,20 +368,16 @@ class QuizService:
                 "question_id": q_sub_data.question_id,
                 "obtained_points": student_points_for_question
             })
-            student_answers_for_general_feedback.append({
-                "question": question,
-                "submitted_answer_data": submitted_answer_dict,
-                "points_obtained": student_points_for_question # ¡Nuevo campo!
-            })
-        
+            
+        # 6. Actualizar Quiz_Student con puntos y feedback general
         quiz_student.points_obtained = total_obtained_points
-        quiz_student.feedback_general_automated = await QuizService._calculate_general_feedback(
-            quiz,total_obtained_points, student_answers_for_general_feedback
-        )
+        quiz_student.feedback_general_automated = gemini_response_json.get("general_feedback", "Feedback general no disponible.")
 
-        print(quiz_student.feedback_general_automated,"---------------------------------")
+        print(quiz_student.feedback_general_automated, "---------------------------------")
 
-        await db.commit()
+        # 7. Confirmar la transacción
+        await db.commit() # Confirmar todos los cambios en la base de datos
+
         return {
             "quiz_id": quiz_student.id_quiz,
             "student_id": quiz_student.id_student,
@@ -414,6 +385,8 @@ class QuizService:
             "question_student": output_question_students
         }
     
+
+
     @staticmethod
     async def get_quizzes_by_ids(db: AsyncSession, quiz_ids: List[int]) -> List[QuizBasicOutput]:
         if not quiz_ids:
@@ -705,6 +678,333 @@ class QuizService:
         except Exception as e:
             # Captura cualquier excepción para una gestión centralizada en el servicio
             raise e
+        
+     
+    # @staticmethod
+    # async def process_student_submission(db: AsyncSession, submission_data: QuizSubmissionInput) -> Dict[str, Any]:
+        
+    #     quiz = (await db.execute(select(Quiz).filter_by(id=submission_data.quiz_id))).scalar_one_or_none()
+    #     if not quiz:
+    #         raise ValueError(f"Quiz con ID {submission_data.quiz_id} no encontrado.")
+
+    #     quiz_student = (await db.execute(
+    #         select(Quiz_Student).filter_by(id_quiz=submission_data.quiz_id, id_student=submission_data.student_id)
+    #     )).scalar_one_or_none()
+
+    #     if not quiz_student:
+    #         quiz_student = Quiz_Student(
+    #             id_quiz=submission_data.quiz_id,
+    #             id_student=submission_data.student_id,
+    #             is_present_quiz=submission_data.is_present,
+    #             points_obtained=0, # Se actualizará después
+    #             feedback_general_automated=None, # Se calculará después
+    #             feedback_general_teacher=None    # Inicializar con NULL
+    #         )
+    #         db.add(quiz_student)
+    #     else:
+    #         quiz_student.is_present_quiz = submission_data.is_present
+    #         quiz_student.points_obtained = 0 # Reiniciar para recalcular
+    #         quiz_student.feedback_general_teacher = None # Mantener/Reiniciar a NULL
+        
+    #     await db.flush()
+
+    #     total_obtained_points = 0
+    #     output_question_students = []
+    #     student_answers_for_general_feedback: List[Dict[str, Any]] = []
+
+    #     for q_sub_data in submission_data.questions:
+    #         question = (await db.execute(
+    #             select(Question).filter_by(id=q_sub_data.question_id, quiz_id=submission_data.quiz_id)
+    #         )).scalar_one_or_none()
+    #         if not question:
+    #             raise ValueError(f"Pregunta con ID {q_sub_data.question_id} no encontrada o no pertenece al quiz {submission_data.quiz_id}.")
+
+    #         answer_base = (await db.execute(
+    #             select(Answer_Base).filter_by(id=question.id_answer)
+    #         )).scalar_one_or_none()
+    #         if not answer_base:
+    #             raise ValueError(f"Respuesta base para la pregunta {q_sub_data.question_id} no encontrada.")
+
+    #         submitted_type = q_sub_data.answer_submitted.type
+    #         submitted_answer_instance = None
+    #         student_points_for_question = 0
+            
+    #         submitted_answer_dict = q_sub_data.answer_submitted.model_dump()
+            
+    #         question_feedback_message = await QuizService._calculate_question_feedback(
+    #             question, submitted_answer_dict
+    #         )
+    #         print(question_feedback_message)
+
+    #         if submitted_type == "submitted_text":
+    #             submitted_answer_instance = Submitted_Text(
+    #                 type="submitted_text",
+    #                 answer_written=q_sub_data.answer_submitted.answer_written
+    #             )
+    #             student_points_for_question =  await QuizService._calculate_points(question,q_sub_data.answer_submitted.answer_written)
+
+    #         elif submitted_type == "submitted_multiple_option":
+    #             submitted_answer_instance = Submitted_Multiple_Option(
+    #                 type="submitted_multiple_option",
+    #                 option_select=q_sub_data.answer_submitted.option_select
+    #             )
+    #             if not q_sub_data.answer_submitted.option_select: 
+    #                 raise ValueError(f"La opción seleccionada para la pregunta {q_sub_data.question_id} no puede estar vacía.")
+    #             if q_sub_data.answer_submitted.option_select == question.answer_correct:
+    #                 student_points_for_question = question.points
+    #         else:
+    #             raise ValueError(f"Tipo de respuesta enviada '{submitted_type}' no soportado.")
+            
+    #         db.add(submitted_answer_instance)
+    #         await db.flush()
+
+    #         total_obtained_points += student_points_for_question
+
+    #         question_student = Question_Student(
+    #             id_student=submission_data.student_id,
+    #             id_question=q_sub_data.question_id,
+    #             id_answer_submitted=submitted_answer_instance.id,
+    #             points_obtained=student_points_for_question,
+    #             feedback_automated=question_feedback_message, # Asignar el feedback
+    #             feedback_teacher=None # Inicializar con NULL
+    #         )
+    #         db.add(question_student)
+
+    #         output_question_students.append({
+    #             "question_id": q_sub_data.question_id,
+    #             "obtained_points": student_points_for_question
+    #         })
+    #         student_answers_for_general_feedback.append({
+    #             "question": question,
+    #             "submitted_answer_data": submitted_answer_dict,
+    #             "points_obtained": student_points_for_question # ¡Nuevo campo!
+    #         })
+        
+    #     quiz_student.points_obtained = total_obtained_points
+    #     quiz_student.feedback_general_automated = await QuizService._calculate_general_feedback(
+    #         quiz,total_obtained_points, student_answers_for_general_feedback
+    #     )
+
+    #     print(quiz_student.feedback_general_automated,"---------------------------------")
+
+    #     await db.commit()
+    #     return {
+    #         "quiz_id": quiz_student.id_quiz,
+    #         "student_id": quiz_student.id_student,
+    #         "obtained_points": quiz_student.points_obtained,
+    #         "question_student": output_question_students
+    #     }
+
+
+
+    # @staticmethod
+    # async def _calculate_general_feedback(
+    #     quiz: Quiz,
+    #     total_obtained_points: int,
+    #     student_answers_details: List[Dict[str, Any]]
+    # ) -> str:
+    #     model = genai.GenerativeModel(
+    #         settings.GEMINI_MODEL,
+    #         generation_config={"temperature": 0.6, "response_mime_type": "text/plain"}
+    #     )
+
+    #     if quiz.total_points is None or quiz.total_points == 0:
+    #         return "Feedback general no disponible (puntos del quiz no definidos o total de puntos es cero)."
+
+    #     percentage = (total_obtained_points / quiz.total_points) * 100 if quiz.total_points > 0 else 0
+
+    #     questions_details = []
+    #     for i, detail in enumerate(student_answers_details):
+    #         question = detail['question']
+    #         submitted_answer = detail['submitted_answer_data']
+    #         points_obtained_for_this_question = detail['points_obtained'] # Nuevo dato
+
+    #         student_response_text = ""
+    #         if submitted_answer["type"] == "submitted_text":
+    #             student_response_text = submitted_answer.get("answer_written", "No especificada")
+    #         elif submitted_answer["type"] == "submitted_multiple_option":
+    #             student_response_text = submitted_answer.get("option_select", "No seleccionada")
+    #         else:
+    #             student_response_text = "Tipo de respuesta no soportado para análisis."
+
+    #         questions_details.append(f"""
+    #         Pregunta {i+1}: {question.statement}
+    #         Respuesta Correcta: {question.answer_correct}
+    #         Respuesta del Estudiante: {student_response_text}
+    #         Puntos Obtenidos: {points_obtained_for_this_question}/{question.points}
+    #         """)
+        
+    #     questions_details_str = "\n".join(questions_details)
+
+    #     prompt = f"""
+    #     Genera un feedback general y constructivo para un estudiante sobre su desempeño en un quiz.
+    #     Utiliza la siguiente información para proporcionar un análisis conciso pero útil, destacando puntos fuertes y áreas de mejora.
+    #     El feedback debe ser amigable, motivador y conciso (máximo 4-5 oraciones), en español.
+
+    #     ---
+    #     Detalles del Quiz:
+    #     Título del Quiz: "{quiz.title}"
+    #     Instrucciones del Quiz: "{quiz.instruction or 'No se proporcionaron instrucciones.'}"
+    #     Puntuación Total Posible: {quiz.total_points}
+    #     Puntuación Obtenida por el Estudiante: {total_obtained_points}
+    #     Porcentaje Obtenido: {percentage:.2f}%
+
+    #     Detalle de Preguntas y Respuestas:
+    #     {questions_details_str}
+    #     ---
+
+    #     Análisis del Desempeño y Feedback General:
+    #     """
+
+    #     general_feedback_ia = ""
+    #     try:
+    #         response = await model.generate_content_async(prompt, request_options={"timeout": 90})
+    #         general_feedback_ia = response.text.strip()
+    #         if general_feedback_ia:
+    #             return general_feedback_ia
+    #         else:
+    #             print("Advertencia: Gemini devolvió un feedback general vacío. Usando feedback predeterminado.")
+
+    #     except Exception as e:
+    #         print(f"Error al generar feedback general con Gemini para el quiz {quiz.id}: {e}")
+    #         pass 
+        
+    #     if percentage == 100:
+    #         return "¡Felicidades! Has respondido todas las preguntas correctamente y obtenido la máxima puntuación. ¡Excelente!"
+    #     elif percentage >= 75:
+    #         return "Excelente trabajo, has demostrado un gran conocimiento en general. Sigue así."
+    #     elif percentage >= 50:
+    #         return "Buen esfuerzo en el quiz. Hay áreas de oportunidad para mejorar, sigue practicando."
+    #     else:
+    #         return "Necesitas repasar algunos conceptos clave. No te desanimes, ¡sigue practicando para mejorar tus habilidades!"
+    
+    
+    # @staticmethod
+    # async def _calculate_question_feedback(question: Question, submitted_answer_data: Dict[str, Any]) -> str:
+    #     model = genai.GenerativeModel(
+    #         settings.GEMINI_MODEL,
+    #         generation_config={"temperature": 0.5, "response_mime_type": "text/plain"}
+    #     )
+
+    #     student_answer = ""
+    #     if submitted_answer_data["type"] == "submitted_text":
+    #         student_answer = submitted_answer_data.get("answer_written", "No especificada")
+    #     elif submitted_answer_data["type"] == "submitted_multiple_option":
+    #         student_answer = submitted_answer_data.get("option_select", "No seleccionada")
+        
+    #     prompt = f"""
+    #     Genera un feedback conciso y constructivo para la respuesta de un estudiante a una pregunta de quiz.
+    #     Considera la pregunta, la respuesta correcta y la respuesta enviada por el estudiante.
+    #     El feedback debe:
+    #     - Indicar si la respuesta del estudiante fue correcta o incorrecta.
+    #     - Si es incorrecta, explicar brevemente por qué o qué faltó, y/o recordar la respuesta correcta.
+    #     - Ser de no más de 2-3 oraciones.
+    #     - Estar en español.
+
+    #     ---
+    #     Pregunta: "{question.statement}"
+    #     Respuesta Correcta Esperada: "{question.answer_correct}"
+    #     Tipo de Pregunta: {question.answer_base.type.replace('base_', '').replace('_', ' ')}
+    #     Respuesta del Estudiante: "{student_answer}"
+    #     ---
+
+    #     Feedback:
+    #     """
+
+    #     feedback_generado_ia = ""
+    #     try:
+    #         response = await model.generate_content_async(prompt, request_options={"timeout": 60})
+    #         feedback_generado_ia = response.text.strip()
+    #         if feedback_generado_ia:
+    #             return feedback_generado_ia
+    #         else:
+    #             print("Advertencia: Gemini devolvió un feedback vacío. Usando feedback predeterminado.")
+
+    #     except Exception as e:
+    #         print(f"Error al generar feedback con Gemini para la pregunta {question.id}: {e}")
+    #         pass 
+
+    #     if submitted_answer_data["type"] == "submitted_text":
+    #         if submitted_answer_data.get("answer_written") == question.answer_correct:
+    #             return "¡Correcto! Tu respuesta es precisa."
+    #         else:
+    #             return f"Incorrecto. La respuesta esperada era: '{question.answer_correct}'."
+    #     elif submitted_answer_data["type"] == "submitted_multiple_option":
+    #         correct_option = question.answer_correct 
+    #         if submitted_answer_data.get("option_select") == correct_option:
+    #             return "¡Muy bien! Esa es la opción correcta."
+    #         else:
+    #             return f"Incorrecto. La opción correcta era: '{correct_option}'."
+        
+    #     return "Feedback no disponible para este tipo de respuesta."
+    
+    # @staticmethod
+    # async def _calculate_points(question: Question, student_answer: str) -> int:
+    #     """
+    #     Calcula los puntos para una pregunta, permitiendo puntajes parciales para preguntas de texto
+    #     evaluadas por Gemini.
+    #     """
+    #     # Para preguntas de opción múltiple, la evaluación sigue siendo directa.
+    #     if question.answer_base.type == "base_multiple_option":
+    #         return question.points if student_answer == question.answer_correct else 0
+        
+    #     # Para preguntas de texto, usamos Gemini para evaluar y asignar puntos parciales.
+    #     elif question.answer_base.type == "base_text":
+    #         model = genai.GenerativeModel(
+    #             settings.GEMINI_MODEL,
+    #             generation_config={"temperature": 0.2, "response_mime_type": "text/plain"}
+    #         )
+
+    #         # Nuevo prompt para solicitar un número de 0 a 100
+    #         prompt = f"""
+    #         Evalúa la 'Respuesta del Estudiante' en comparación con la 'Respuesta Correcta Esperada' para la 'Pregunta' dada.
+    #         Tu objetivo es determinar el porcentaje de corrección de la respuesta del estudiante.
+
+    #         Considera la exhaustividad, precisión, y si aborda los puntos clave de la respuesta esperada.
+    #         Si la respuesta es completamente correcta y cumple con todos los requisitos, asigna 100%.
+    #         Si es parcialmente correcta (ej. cubre algunos aspectos, pero le faltan otros), asigna un porcentaje proporcional (ej. 50%, 75%).
+    #         Si es completamente incorrecta o irrelevante, asigna 0%.
+
+    #         Responde ÚNICAMENTE con un NÚMERO ENTERO entre 0 y 100 (sin el signo de porcentaje, ni texto adicional).
+
+    #         ---
+    #         Pregunta: "{question.statement}"
+    #         Respuesta Correcta Esperada: "{question.answer_correct}"
+    #         Respuesta del Estudiante: "{student_answer}"
+    #         ---
+
+    #         Porcentaje de Corrección:
+    #         """
+            
+    #         try:
+    #             response = await model.generate_content_async(prompt, request_options={"timeout": 45}) # Timeout ligeramente aumentado
+    #             raw_percentage = response.text.strip()
+                
+    #             # Intentar convertir la respuesta de Gemini a un entero
+    #             try:
+    #                 percentage_correct = int(raw_percentage)
+    #                 # Asegurarse de que el porcentaje esté dentro del rango válido [0, 100]
+    #                 percentage_correct = max(0, min(100, percentage_correct))
+    #             except ValueError:
+    #                 print(f"Advertencia: Gemini devolvió una respuesta no numérica para la pregunta {question.id}: '{raw_percentage}'. Asumiendo 0 puntos.")
+    #                 percentage_correct = 0 # Si la respuesta no es un número, asumimos 0%
+
+    #             # Calcular los puntos obtenidos basándose en el porcentaje
+    #             points_obtained = int(round((percentage_correct / 100) * question.points))
+    #             return points_obtained
+                    
+    #         except Exception as e:
+    #             print(f"Error al evaluar puntos con Gemini para la pregunta {question.id}: {e}")
+    #             # Fallback en caso de que Gemini falle: asumir 0 puntos
+    #             return 0
+        
+    #     # Si el tipo de pregunta no está definido o no se soporta para el cálculo automático de puntos.
+    #     return 0
+
+
+
+
+
     # @staticmethod
     # def _serialize_quiz(quiz: Quiz) -> Dict[str, Any]:
     #     """
