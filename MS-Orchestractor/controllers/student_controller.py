@@ -38,7 +38,7 @@ async def submmitted_answer(classroom_id: int, quiz_submit: QuizSubmission,reque
     async with httpx.AsyncClient() as client:
         try:
             quiz_submit_dict = quiz_submit.model_dump()
-            quiz_response = await client.post(f"{quices_url}/quiz/submit_answers",json=quiz_submit_dict)
+            quiz_response = await client.post(f"{quices_url}/quiz/submit_answers",json=quiz_submit_dict,timeout=60)
             quiz_response.raise_for_status()
             response = await client.patch(f"{classrooms_url}/classrooms/{classroom_id}/student-quiz-points",json=quiz_response.json())
             response.raise_for_status()
