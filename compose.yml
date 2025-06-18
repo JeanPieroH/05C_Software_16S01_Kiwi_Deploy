@@ -91,9 +91,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      USERS_URL: http://3.89.23.110:8001
-      CLASSROOMS_URL: http://3.89.23.110:8002
-      QUICES_URL: http://3.89.23.110:8003/api/v1
+      USERS_URL: http://users:8080
+      CLASSROOMS_URL: http://classrooms:3000
+      QUICES_URL: http://quices:8001/api/v1
     restart: always
     depends_on:
       - users
